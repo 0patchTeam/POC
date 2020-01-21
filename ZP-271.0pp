@@ -1,0 +1,40 @@
+;0patch for CVE-2017-0290 in 64-bit mpengine.dll version 1.1.13701.0
+
+MODULE_PATH "C:\Analysis\CVE-2017-0290\mpengine.dll_64bit_1.1.13701.0\mpengine.dll"
+PATCH_ID 271
+PATCH_FORMAT_VER 2
+VULN_ID 2436
+PLATFORM win64
+
+
+patchlet_start
+ PATCHLET_ID 1
+ PATCHLET_TYPE 2 
+ PATCHLET_OFFSET 0x218E10 
+
+ ; We'll need the GetTypeOf function and the location of function epilogue
+ PIT mpengine.dll!0x218940,mpengine.dll!0x218E9A
+
+ ; Note that GetTypeOf taints the following registers:
+ ; rdx - always
+ ; rcx - only in case of an exception
+ ; rax - expected, this is the return value
+  
+ code_start
+
+  push rcx          ; We need to preserve rcx, as it's still used after our patchlet code
+                    ; while GetTypeOf taints rdx, we don't need to preserve it
+  mov rcx, r9       ; r9 points to the object
+  call PIT_0x218940 ; GetTypeOf object
+  pop rcx           ; restore rcx
+  cmp eax, 4        ; is the object of type string?
+  jz OK             ; It is? Very well, continue...
+
+  xor al, al        ; It isn't? Exit this function without doing anything, return 0
+  call PIT_ExploitBlocked ; Show "Exploit attempt blocked"
+  jmp PIT_0x218E9A  ; Jump to function epilogue
+  
+  OK: 
+
+ code_end
+patchlet_end

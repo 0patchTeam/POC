@@ -1,0 +1,38 @@
+;0patch for CVE-2017-0290 in 32-bit mpengine.dll version 1.1.13701.0
+
+MODULE_PATH "C:\Analysis\CVE-2017-0290\mpengine.dll_1.1.13701.0-32b\mpengine.dll"
+PATCH_ID 272
+PATCH_FORMAT_VER 2
+VULN_ID 2436
+PLATFORM win32
+
+
+patchlet_start
+ PATCHLET_ID 1
+ PATCHLET_TYPE 2 
+ PATCHLET_OFFSET 0x38BBE6 
+
+ ; We'll need the GetTypeOf function and the location of function epilogue
+ PIT mpengine.dll!0x38F434,mpengine.dll!0x38BC57
+ 
+ ; Note that GetTypeOf taints the following registers:
+ ; ecx - sometimes
+ ; eax - expected, this is the return value
+
+ code_start
+  
+  push ecx             ; We need to preserve ecx, as it's still used after our patchlet code
+  mov ecx, [ebp + 10h] ; [ebp + 10h] points to the object
+  call PIT_0x38F434    ; GetTypeOf object
+  pop ecx              ; restore ecx
+  cmp eax, 4           ; is the object of type string?
+  jz OK                ; It is? Very well, continue...
+
+  xor al, al           ; It isn't? Exit this function without doing anything, return 0
+  call PIT_ExploitBlocked ; Show "Exploit attempt blocked"
+  jmp PIT_0x38BC57     ; Jump to function epilogue
+  
+  OK: 
+
+ code_end
+patchlet_end
